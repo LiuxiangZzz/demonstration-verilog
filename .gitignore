@@ -1,0 +1,36 @@
+# 构建输出文件
+test/build/
+*.o
+*.a
+
+# 仿真生成的文件
+test/sim
+*.vcd
+*.fst
+*.lxt
+*.vpd
+
+# 编译生成的文件
+test/hello.hex
+src/hello.hex
+*.elf
+*.bin
+*.dump
+
+# 临时文件
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 日志文件
+*.log
+
+# 编辑器备份文件
+*.bak
+*.tmp
+
+# Verilog仿真器生成的文件
+*.vvp
+*.lxt2
+
