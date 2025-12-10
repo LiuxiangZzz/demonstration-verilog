@@ -8,7 +8,7 @@ module testbench;
     wire [31:0] pc;
     
     // CPU实例
-    cpu cpu_inst(
+    top cpu_inst(
         .clk(clk),
         .rst(rst),
         .pc_out(pc)
@@ -25,7 +25,11 @@ module testbench;
         rst = 1;
         #100;
         rst = 0;
+        $display("=== CPU仿真开始 ===");
+        $display("程序输出:");
+        $display("----------------------------------------");
         #5000;  // 运行5000ns
+        $display("----------------------------------------");
         $display("Simulation finished at time %0t", $time);
         $finish;
     end

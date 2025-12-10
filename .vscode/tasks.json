@@ -1,0 +1,55 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "start-qemu",
+      "type": "shell",
+      "command": "cd ${workspaceFolder} && qemu-riscv32 -g 1234 test/build/hello.elf",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^$",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*",
+          "endsPattern": ".*"
+        }
+      },
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated",
+        "close": true
+      }
+    },
+    {
+      "label": "stop-qemu",
+      "type": "shell",
+      "command": "pkill",
+      "args": [
+        "-f",
+        "qemu-riscv32.*hello.elf"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "compile for debug",
+      "type": "shell",
+      "command": "make",
+      "args": [
+        "compile"
+      ],
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}
+

@@ -2,6 +2,48 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "debug hello",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/test/build/hello.elf",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb-multiarch",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Set architecture to RISC-V",
+          "text": "set architecture riscv:rv32",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Load symbols first",
+          "text": "file ${workspaceFolder}/test/build/hello.elf",
+          "ignoreFailures": false
+        },
+        {
+          "description": "Connect to qemu",
+          "text": "target remote :1234",
+          "ignoreFailures": false
+        },
+        {
+          "description": "Set breakpoint at main",
+          "text": "break main",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "start-qemu",
+      "postDebugTask": "stop-qemu"
+    },
+    {
       "name": "C/C++ Runner: Debug Session",
       "type": "cppdbg",
       "request": "launch",

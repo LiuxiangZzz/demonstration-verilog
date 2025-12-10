@@ -64,6 +64,24 @@ module dmem(
                         // 写入完成
                         if (addr[31:2] < 16384)
                             mem[addr[31:2]] <= wdata;
+                        
+                        // 内存映射I/O：检测对输出地址的写入（0x10000000）
+                        if (addr == 32'h10000000) begin
+                            // 将写入的数据作为字符打印到终端
+                            if (wdata[7:0] == 8'h0A || wdata[7:0] == 8'h0D) begin
+                                // 换行符
+                                $display("");
+                            end else if (wdata[7:0] >= 8'h20 && wdata[7:0] <= 8'h7E) begin
+                                // 可打印ASCII字符（0x20-0x7E）
+                                $write("%c", wdata[7:0]);
+                            end else if (wdata[7:0] == 8'h00) begin
+                                // 空字符，不打印
+                            end else begin
+                                // 其他控制字符（显示为十六进制）
+                                $write("[%02h]", wdata[7:0]);
+                            end
+                        end
+                        
                         state <= IDLE;
                         mem_ready <= 1'b1;
                         delay_counter <= 3'b0;

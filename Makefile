@@ -24,7 +24,7 @@ OBJDUMP_OUTPUT = $(BUILD_DIR)/hello.dump
 SIMULATOR = iverilog
 VVP = vvp
 TB_FILE = $(TEST_DIR)/testbench.v
-SRC_FILES = $(SRC_DIR)/*.v
+SRC_FILES = $(SRC_DIR)/pipeline/*.v $(SRC_DIR)/Function/*.v
 SIM_EXEC = $(TEST_DIR)/sim
 VCD_FILE = $(WAVEFORM_DIR)/demodump.vcd
 VCD_FILE_LOCAL = $(TEST_DIR)/demodump.vcd
@@ -71,8 +71,8 @@ $(HEX_OUTPUT): $(BIN_OUTPUT)
 	fi
 	@echo "十六进制文件已生成: $@"
 	@cp $@ $(TEST_DIR)/hello.hex
-	@cp $@ $(SRC_DIR)/hello.hex
-	@echo "已复制到 $(TEST_DIR)/hello.hex 和 $(SRC_DIR)/hello.hex"
+	@cp $@ $(SRC_DIR)/pipeline/hello.hex
+	@echo "已复制到 $(TEST_DIR)/hello.hex 和 $(SRC_DIR)/pipeline/hello.hex"
 
 # 编译目标：生成汇编文件和可执行文件
 compile: $(ASM_OUTPUT) $(ELF_OUTPUT) $(BIN_OUTPUT) $(HEX_OUTPUT)
@@ -122,11 +122,52 @@ prepare-sim: $(HEX_OUTPUT)
 		exit 1; \
 	fi
 
+# 直接运行hello.c程序（使用RISC-V模拟器）
+run: $(ELF_OUTPUT)
+	@echo "=== 使用RISC-V模拟器运行hello.c程序 ==="
+	@if command -v qemu-riscv32 >/dev/null 2>&1; then \
+		echo "使用 qemu-riscv32 (用户模式) 运行..."; \
+		echo "注意: 程序会尝试写入0x10000000，在qemu中可能失败（这是正常的）"; \
+		echo "----------------------------------------"; \
+		qemu-riscv32 $(ELF_OUTPUT) 2>&1 || true; \
+		echo "----------------------------------------"; \
+		echo "程序执行完成（退出码可能非0，因为访问了内存映射I/O地址）"; \
+	elif command -v qemu-system-riscv32 >/dev/null 2>&1; then \
+		echo "检测到 qemu-system-riscv32 (系统模拟器)"; \
+		echo "警告: qemu-system-riscv32需要完整系统，不适合直接运行单个程序"; \
+		echo ""; \
+		echo "推荐安装 qemu-user (用户模式模拟器):"; \
+		echo "  sudo apt-get install qemu-user"; \
+		echo ""; \
+		echo "或者使用CPU仿真: make sim 或 make fastsim"; \
+		exit 1; \
+	elif command -v spike >/dev/null 2>&1; then \
+		echo "使用 spike 运行..."; \
+		echo "----------------------------------------"; \
+		spike pk $(ELF_OUTPUT) 2>/dev/null || spike $(ELF_OUTPUT); \
+		echo "----------------------------------------"; \
+		echo "程序执行完成"; \
+	else \
+		echo "错误: 未找到RISC-V用户模式模拟器"; \
+		echo ""; \
+		echo "你系统中有 qemu-system-riscv32，但它是系统模拟器，不适合运行单个程序"; \
+		echo ""; \
+		echo "请安装用户模式模拟器:"; \
+		echo "  sudo apt-get install qemu-user        # 推荐，更易用"; \
+		echo "  或"; \
+		echo "  sudo apt-get install spike            # RISC-V官方模拟器"; \
+		echo ""; \
+		echo "安装后重新运行: make run"; \
+		echo ""; \
+		echo "或者使用CPU仿真运行程序: make sim 或 make fastsim"; \
+		exit 1; \
+	fi
+
 # 快速仿真（不生成波形文件）
 fastsim: prepare-sim check-simulator
 	@echo "=== 快速仿真（无波形文件）==="
 	@cd $(TEST_DIR) && \
-	$(SIMULATOR) -DNO_WAVEFORM -o sim $(TB_FILE) ../$(SRC_DIR)/*.v && \
+	$(SIMULATOR) -DNO_WAVEFORM -o sim $(TB_FILE) ../$(SRC_DIR)/pipeline/*.v ../$(SRC_DIR)/Function/*.v && \
 	$(VVP) sim
 	@echo "=== 仿真完成 ==="
 
@@ -134,7 +175,7 @@ fastsim: prepare-sim check-simulator
 sim: prepare-sim check-simulator
 	@echo "=== 完整仿真（生成波形文件）==="
 	@cd $(TEST_DIR) && \
-	$(SIMULATOR) -o sim $(TB_FILE) ../$(SRC_DIR)/*.v && \
+	$(SIMULATOR) -o sim $(TB_FILE) ../$(SRC_DIR)/pipeline/*.v ../$(SRC_DIR)/Function/*.v && \
 	$(VVP) sim
 	@echo ""
 	@if [ -f $(VCD_FILE) ]; then \
@@ -176,11 +217,14 @@ help:
 	@echo "  make objdump          - 生成可执行文件的反汇编文件"
 	@echo "                         输出文件: test/build/hello.dump"
 	@echo ""
-	@echo "  make sim              - 执行完整仿真并生成波形文件"
-	@echo "                         波形文件保存到Windows共享文件夹"
+	@echo "  make run               - 使用RISC-V模拟器运行hello.c程序"
+	@echo "                         优先使用qemu-riscv32，备选spike"
 	@echo ""
-	@echo "  make fastsim          - 执行快速仿真（不生成波形文件）"
-	@echo "                         用于快速测试，速度更快"
+	@echo "  make sim               - 执行完整仿真并生成波形文件"
+	@echo "                         使用流水线CPU运行程序，波形文件保存到Windows共享文件夹"
+	@echo ""
+	@echo "  make fastsim           - 执行快速仿真（不生成波形文件）"
+	@echo "                         使用流水线CPU运行程序，用于快速测试，速度更快"
 	@echo ""
 	@echo "  make clean            - 清理构建文件（build目录、仿真文件等）"
 	@echo ""
@@ -200,5 +244,5 @@ help:
 	@echo "  波形文件:    $(WAVEFORM_DIR)/demodump.vcd"
 	@echo ""
 
-.PHONY: compile objdump sim fastsim clean distclean help check-toolchain check-simulator prepare-sim
+.PHONY: compile objdump run run-riscv sim fastsim clean distclean help check-toolchain check-simulator prepare-sim
 
