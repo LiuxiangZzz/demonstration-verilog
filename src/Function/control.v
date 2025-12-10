@@ -82,6 +82,13 @@ module control(
                 alu_op = 4'b0000;  // ADD操作
             end
 
+            OP_LUI: begin  // LUI
+                reg_write = 1'b1;
+                alu_src = 2'b01;  // 使用立即数
+                mem_to_reg = 2'b00; // ALU结果写回（立即数左移12位）
+                alu_op = 4'b0010;  // LUI操作（立即数直接作为结果，在立即数生成中处理）
+            end
+
             default: begin
                 // 保持默认值
             end

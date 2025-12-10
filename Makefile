@@ -10,7 +10,14 @@ OBJCOPY = $(RISCV_PREFIX)objcopy
 TEST_DIR = test
 BUILD_DIR = $(TEST_DIR)/build
 SRC_DIR = src
-WAVEFORM_DIR = /mnt/c/Users/Lenovo/Desktop/waveform_check
+# Windows波形文件目录（尝试多个可能的路径）
+# WSL路径
+WAVEFORM_DIR_WSL = /mnt/c/Users/Lenovo/Desktop/waveform_check
+# VMware共享文件夹路径（如果Desktop已挂载）
+# 注意：共享文件夹直接映射Desktop，所以路径是 /mnt/hgfs/Desktop/waveform_check
+WAVEFORM_DIR_VMWARE = /mnt/hgfs/Desktop/waveform_check
+# 检测可用的路径
+WAVEFORM_DIR = $(shell if [ -d $(WAVEFORM_DIR_WSL) ]; then echo $(WAVEFORM_DIR_WSL); elif [ -d $(WAVEFORM_DIR_VMWARE) ]; then echo $(WAVEFORM_DIR_VMWARE); else echo ""; fi)
 
 # 文件配置
 C_SOURCE = $(TEST_DIR)/hello.c
@@ -26,8 +33,8 @@ VVP = vvp
 TB_FILE = $(TEST_DIR)/testbench.v
 SRC_FILES = $(SRC_DIR)/pipeline/*.v $(SRC_DIR)/Function/*.v
 SIM_EXEC = $(TEST_DIR)/sim
-VCD_FILE = $(WAVEFORM_DIR)/demodump.vcd
-VCD_FILE_LOCAL = $(TEST_DIR)/demodump.vcd
+VCD_FILE_SRC = $(SRC_DIR)/demodump.vcd
+VCD_FILE_WIN = $(WAVEFORM_DIR)/demodump.vcd
 
 # 编译选项
 CFLAGS = -march=rv32i -mabi=ilp32 -nostdlib -Ttext=0x0 -O0 -g
@@ -92,28 +99,6 @@ objdump: $(ELF_OUTPUT)
 	@echo "前20行反汇编内容:"
 	@head -n 20 $(OBJDUMP_OUTPUT)
 
-# 检查RISC-V工具链
-check-toolchain:
-	@echo "=== 检查RISC-V工具链 ==="
-	@if ! command -v $(CC) >/dev/null 2>&1; then \
-		echo "错误: 未找到RISC-V工具链 ($(CC))"; \
-		echo "请安装: sudo apt-get install gcc-riscv64-unknown-elf"; \
-		exit 1; \
-	fi
-	@echo "RISC-V工具链检查通过"
-	@$(CC) --version | head -n 1
-
-# 检查仿真器
-check-simulator:
-	@echo "=== 检查仿真器 ==="
-	@if ! command -v $(SIMULATOR) >/dev/null 2>&1; then \
-		echo "错误: 未找到仿真器 ($(SIMULATOR))"; \
-		echo "请安装: sudo apt-get install iverilog"; \
-		exit 1; \
-	fi
-	@echo "仿真器检查通过"
-	@$(SIMULATOR) -v | head -n 1
-
 # 准备仿真：生成测试程序
 prepare-sim: $(HEX_OUTPUT)
 	@echo "=== 准备仿真文件 ==="
@@ -122,71 +107,50 @@ prepare-sim: $(HEX_OUTPUT)
 		exit 1; \
 	fi
 
-# 直接运行hello.c程序（使用RISC-V模拟器）
-run: $(ELF_OUTPUT)
-	@echo "=== 使用RISC-V模拟器运行hello.c程序 ==="
-	@if command -v qemu-riscv32 >/dev/null 2>&1; then \
-		echo "使用 qemu-riscv32 (用户模式) 运行..."; \
-		echo "注意: 程序会尝试写入0x10000000，在qemu中可能失败（这是正常的）"; \
-		echo "----------------------------------------"; \
-		qemu-riscv32 $(ELF_OUTPUT) 2>&1 || true; \
-		echo "----------------------------------------"; \
-		echo "程序执行完成（退出码可能非0，因为访问了内存映射I/O地址）"; \
-	elif command -v qemu-system-riscv32 >/dev/null 2>&1; then \
-		echo "检测到 qemu-system-riscv32 (系统模拟器)"; \
-		echo "警告: qemu-system-riscv32需要完整系统，不适合直接运行单个程序"; \
-		echo ""; \
-		echo "推荐安装 qemu-user (用户模式模拟器):"; \
-		echo "  sudo apt-get install qemu-user"; \
-		echo ""; \
-		echo "或者使用CPU仿真: make sim 或 make fastsim"; \
-		exit 1; \
-	elif command -v spike >/dev/null 2>&1; then \
-		echo "使用 spike 运行..."; \
-		echo "----------------------------------------"; \
-		spike pk $(ELF_OUTPUT) 2>/dev/null || spike $(ELF_OUTPUT); \
-		echo "----------------------------------------"; \
-		echo "程序执行完成"; \
-	else \
-		echo "错误: 未找到RISC-V用户模式模拟器"; \
-		echo ""; \
-		echo "你系统中有 qemu-system-riscv32，但它是系统模拟器，不适合运行单个程序"; \
-		echo ""; \
-		echo "请安装用户模式模拟器:"; \
-		echo "  sudo apt-get install qemu-user        # 推荐，更易用"; \
-		echo "  或"; \
-		echo "  sudo apt-get install spike            # RISC-V官方模拟器"; \
-		echo ""; \
-		echo "安装后重新运行: make run"; \
-		echo ""; \
-		echo "或者使用CPU仿真运行程序: make sim 或 make fastsim"; \
-		exit 1; \
-	fi
-
 # 快速仿真（不生成波形文件）
-fastsim: prepare-sim check-simulator
+fastsim: prepare-sim
 	@echo "=== 快速仿真（无波形文件）==="
 	@cd $(TEST_DIR) && \
-	$(SIMULATOR) -DNO_WAVEFORM -o sim $(TB_FILE) ../$(SRC_DIR)/pipeline/*.v ../$(SRC_DIR)/Function/*.v && \
+	$(SIMULATOR) -DNO_WAVEFORM -o sim testbench.v ../$(SRC_DIR)/pipeline/*.v ../$(SRC_DIR)/Function/*.v && \
 	$(VVP) sim
 	@echo "=== 仿真完成 ==="
 
 # 完整仿真（生成波形文件）
-sim: prepare-sim check-simulator
+sim: prepare-sim
 	@echo "=== 完整仿真（生成波形文件）==="
 	@cd $(TEST_DIR) && \
-	$(SIMULATOR) -o sim $(TB_FILE) ../$(SRC_DIR)/pipeline/*.v ../$(SRC_DIR)/Function/*.v && \
+	$(SIMULATOR) -o sim testbench.v ../$(SRC_DIR)/pipeline/*.v ../$(SRC_DIR)/Function/*.v && \
 	$(VVP) sim
 	@echo ""
-	@if [ -f $(VCD_FILE) ]; then \
-		echo "=== 波形文件已保存到Windows共享文件夹 ==="; \
-		echo "路径: $(VCD_FILE)"; \
-	elif [ -f $(VCD_FILE_LOCAL) ]; then \
-		echo "=== 波形文件已保存到本地 ==="; \
-		echo "路径: $(VCD_FILE_LOCAL)"; \
-		echo "请手动复制到: $(WAVEFORM_DIR)/demodump.vcd"; \
+	@if [ -f $(VCD_FILE_SRC) ]; then \
+		echo "=== 波形文件已生成到: $(VCD_FILE_SRC) ==="; \
+		WAVEFORM_TARGET=""; \
+		if [ -d $(WAVEFORM_DIR_WSL) ]; then \
+			WAVEFORM_TARGET="$(WAVEFORM_DIR_WSL)/demodump.vcd"; \
+		elif [ -d $(WAVEFORM_DIR_VMWARE) ]; then \
+			WAVEFORM_TARGET="$(WAVEFORM_DIR_VMWARE)/demodump.vcd"; \
+		fi; \
+		if [ -n "$$WAVEFORM_TARGET" ]; then \
+			cp $(VCD_FILE_SRC) $$WAVEFORM_TARGET && \
+			echo "=== 已自动同步到Windows文件夹 ==="; \
+			echo "路径: $$WAVEFORM_TARGET"; \
+		else \
+			echo "警告: Windows共享文件夹不存在，无法自动同步"; \
+			echo ""; \
+			echo "波形文件位置: $(VCD_FILE_SRC)"; \
+			echo "目标Windows路径: C:\\Users\\Lenovo\\Desktop\\waveform_check\\demodump.vcd"; \
+			echo ""; \
+			echo "请使用以下方式之一复制文件:"; \
+			echo "  1. 如果使用VMware，请先挂载共享文件夹:"; \
+			echo "     sudo mkdir -p /mnt/hgfs/Desktop"; \
+			echo "     sudo vmhgfs-fuse .host:/Desktop /mnt/hgfs/Desktop -o subtype=vmhgfs-fuse,allow_other"; \
+			echo "  2. 使用SCP/SFTP工具从虚拟机复制到Windows"; \
+			echo "  3. 使用文件管理器手动复制（如果已配置共享）"; \
+			echo ""; \
+			echo "文件大小: $$(du -h $(VCD_FILE_SRC) | cut -f1)"; \
+		fi \
 	else \
-		echo "警告: 未找到波形文件"; \
+		echo "警告: 未找到波形文件 $(VCD_FILE_SRC)"; \
 	fi
 
 # 清理构建文件
@@ -195,12 +159,13 @@ clean:
 	rm -rf $(BUILD_DIR)
 	rm -f $(TEST_DIR)/sim $(TEST_DIR)/*.vcd
 	rm -f $(TEST_DIR)/hello.hex $(SRC_DIR)/hello.hex
+	rm -f $(VCD_FILE_SRC)
 	@echo "清理完成"
 
 # 完全清理（包括波形文件）
-distclean: clean
+deepclean: clean
 	@echo "=== 完全清理 ==="
-	rm -f $(WAVEFORM_DIR)/demodump.vcd 2>/dev/null || true
+	rm -f $(VCD_FILE_WIN) 2>/dev/null || true
 	@echo "完全清理完成"
 
 # 显示帮助信息
@@ -217,32 +182,20 @@ help:
 	@echo "  make objdump          - 生成可执行文件的反汇编文件"
 	@echo "                         输出文件: test/build/hello.dump"
 	@echo ""
-	@echo "  make run               - 使用RISC-V模拟器运行hello.c程序"
-	@echo "                         优先使用qemu-riscv32，备选spike"
-	@echo ""
 	@echo "  make sim               - 执行完整仿真并生成波形文件"
-	@echo "                         使用流水线CPU运行程序，波形文件保存到Windows共享文件夹"
+	@echo "                         使用流水线CPU运行程序，波形文件保存到src目录并自动同步到Windows文件夹"
 	@echo ""
 	@echo "  make fastsim           - 执行快速仿真（不生成波形文件）"
 	@echo "                         使用流水线CPU运行程序，用于快速测试，速度更快"
 	@echo ""
 	@echo "  make clean            - 清理构建文件（build目录、仿真文件等）"
 	@echo ""
-	@echo "  make distclean        - 完全清理（包括波形文件）"
+	@echo "  make deepclean        - 完全清理（包括波形文件）"
 	@echo ""
 	@echo "  make help             - 显示此帮助信息"
 	@echo ""
-	@echo "  make check-toolchain  - 检查RISC-V工具链是否安装"
-	@echo ""
-	@echo "  make check-simulator  - 检查仿真器是否安装"
-	@echo ""
 	@echo "=========================================="
 	@echo ""
-	@echo "文件位置:"
-	@echo "  C源文件:     $(C_SOURCE)"
-	@echo "  构建目录:    $(BUILD_DIR)"
-	@echo "  波形文件:    $(WAVEFORM_DIR)/demodump.vcd"
-	@echo ""
 
-.PHONY: compile objdump run run-riscv sim fastsim clean distclean help check-toolchain check-simulator prepare-sim
+.PHONY: compile objdump sim fastsim clean deepclean help prepare-sim
 

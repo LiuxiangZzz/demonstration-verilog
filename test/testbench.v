@@ -34,24 +34,13 @@ module testbench;
         $finish;
     end
     
-    // 波形文件输出到Windows共享文件夹
+    // 波形文件输出到src目录
     // 可以通过定义NO_WAVEFORM宏来禁用波形文件生成（用于fastsim）
     `ifndef NO_WAVEFORM
     initial begin
-        // 尝试多个可能的路径
-        // 优先尝试Windows共享文件夹路径（WSL）
-        if ($system("test -d /mnt/c/Users/Lenovo/Desktop/waveform_check") == 0) begin
-            $dumpfile("/mnt/c/Users/Lenovo/Desktop/waveform_check/demodump.vcd");
-            $display("Waveform file: /mnt/c/Users/Lenovo/Desktop/waveform_check/demodump.vcd");
-        end else if ($system("test -d /media/sf_waveform_check") == 0) begin
-            $dumpfile("/media/sf_waveform_check/demodump.vcd");
-            $display("Waveform file: /media/sf_waveform_check/demodump.vcd");
-        end else begin
-            // 如果共享文件夹不存在，输出到当前目录
-            $dumpfile("demodump.vcd");
-            $display("Warning: Windows shared folder not found, saving to: demodump.vcd");
-            $display("Please manually copy demodump.vcd to C:\\Users\\Lenovo\\Desktop\\waveform_check\\");
-        end
+        // 输出到src目录
+        $dumpfile("../src/demodump.vcd");
+        $display("Waveform file: ../src/demodump.vcd");
         $dumpvars(0, testbench);
     end
     `else
@@ -67,7 +56,8 @@ module testbench;
     always @(posedge clk) begin
         if (!rst) begin
             cycle_count = cycle_count + 1;
-            if (cycle_count % 10 == 0) begin
+            // 减少时间戳输出频率，让Hello World输出更清晰
+            if (cycle_count % 100 == 0) begin
                 $display("Time: %0t ns, Cycle: %0d, PC: %h", $time, cycle_count, pc);
             end
         end

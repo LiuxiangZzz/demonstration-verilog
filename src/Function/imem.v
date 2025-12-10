@@ -8,23 +8,40 @@ module imem(
     reg [31:0] mem [0:16383];
     
     // 从文件加载指令
+    integer i;
+    reg file_loaded;
     initial begin
+        // 先初始化为NOP
+        for (i = 0; i < 16384; i = i + 1) begin
+            mem[i] = 32'h00000013;  // NOP
+        end
+        
         // 尝试从多个路径加载
-        if (!$readmemh("../pipeline/hello.hex", mem)) begin
-            if (!$readmemh("hello.hex", mem)) begin
-                if (!$readmemh("../test/hello.hex", mem)) begin
-                    if (!$readmemh("test/hello.hex", mem)) begin
-                        // 如果都失败，初始化为NOP
-                        integer i;
-                        for (i = 0; i < 16384; i = i + 1) begin
-                            mem[i] = 32'h00000013;  // NOP
-                        end
-                        $display("Warning: Could not load hello.hex, initializing with NOPs");
+        file_loaded = 0;
+        $readmemh("../pipeline/hello.hex", mem);
+        if (mem[0] != 32'h00000013) begin
+            file_loaded = 1;
+            $display("Successfully loaded instructions from ../pipeline/hello.hex");
+        end else begin
+            $readmemh("hello.hex", mem);
+            if (mem[0] != 32'h00000013) begin
+                file_loaded = 1;
+                $display("Successfully loaded instructions from hello.hex");
+            end else begin
+                $readmemh("../test/hello.hex", mem);
+                if (mem[0] != 32'h00000013) begin
+                    file_loaded = 1;
+                    $display("Successfully loaded instructions from ../test/hello.hex");
+                end else begin
+                    $readmemh("test/hello.hex", mem);
+                    if (mem[0] != 32'h00000013) begin
+                        file_loaded = 1;
+                        $display("Successfully loaded instructions from test/hello.hex");
+                    end else begin
+                        $display("Warning: Could not load hello.hex, using NOPs");
                     end
                 end
             end
-        end else begin
-            $display("Successfully loaded instructions from hello.hex");
         end
     end
     

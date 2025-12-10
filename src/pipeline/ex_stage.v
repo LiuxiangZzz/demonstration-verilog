@@ -61,11 +61,12 @@ module ex_stage(
     wire [31:0] forward_mem_wb_data;
     wire [31:0] forward_ex_mem_data;
     
-    assign forward_a = ((id_ex_rs1 != 5'b0) && (id_ex_rs1 == mem_wb_rd) && mem_wb_reg_write) ? 2'b01 :
-                       ((id_ex_rs1 != 5'b0) && (id_ex_rs1 == prev_ex_mem_rd) && prev_ex_mem_reg_write) ? 2'b10 : 2'b00;
+    // 前推优先使用上一周期 EX/MEM，其次才是 MEM/WB，避免刚加载的基址被更旧的值覆盖
+    assign forward_a = ((id_ex_rs1 != 5'b0) && (id_ex_rs1 == prev_ex_mem_rd) && prev_ex_mem_reg_write) ? 2'b10 :
+                       ((id_ex_rs1 != 5'b0) && (id_ex_rs1 == mem_wb_rd) && mem_wb_reg_write) ? 2'b01 : 2'b00;
     
-    assign forward_b = ((id_ex_rs2 != 5'b0) && (id_ex_rs2 == mem_wb_rd) && mem_wb_reg_write) ? 2'b01 :
-                       ((id_ex_rs2 != 5'b0) && (id_ex_rs2 == prev_ex_mem_rd) && prev_ex_mem_reg_write) ? 2'b10 : 2'b00;
+    assign forward_b = ((id_ex_rs2 != 5'b0) && (id_ex_rs2 == prev_ex_mem_rd) && prev_ex_mem_reg_write) ? 2'b10 :
+                       ((id_ex_rs2 != 5'b0) && (id_ex_rs2 == mem_wb_rd) && mem_wb_reg_write) ? 2'b01 : 2'b00;
     
     assign forward_mem_wb_data = (mem_wb_mem_to_reg == 2'b00) ? mem_wb_alu_result :
                                   (mem_wb_mem_to_reg == 2'b01) ? mem_wb_mem_rdata :
@@ -95,6 +96,20 @@ module ex_stage(
         .zero(alu_zero)
     );
     
+    // LUI指令特殊处理：直接使用立即数作为结果
+    wire [31:0] final_alu_result;
+    assign final_alu_result = (id_ex_alu_op == 4'b0010) ? id_ex_imm : alu_result;
+    
+    // 调试：显示sw指令的ALU计算和信号传递（已禁用，让输出更清晰）
+    // always @(posedge clk) begin
+    //     if (id_ex_mem_write && id_ex_instruction[6:0] == 7'b0100011) begin
+    //         $display("ex_stage: SW rs1=%0d rs2=%0d fwdA=%b fwdB=%b alu_a=%h alu_b=%h alu_res=%h final=%h mem_write=%b", 
+    //                  id_ex_rs1, id_ex_rs2, forward_a, forward_b, alu_a, alu_b, alu_result, final_alu_result, id_ex_mem_write);
+    //         $display("ex_stage:   id_ex_mem_read=%b mem_wb_rd=%0d prev_ex_mem_rd=%0d fwd_mem_wb=%h fwd_ex_mem=%h",
+    //                  id_ex_mem_read, mem_wb_rd, prev_ex_mem_rd, forward_mem_wb_data, forward_ex_mem_data);
+    //     end
+    // end
+    
     // 分支判断
     wire [31:0] branch_rs1, branch_rs2;
     assign branch_rs1 = (forward_a == 2'b01) ? forward_mem_wb_data :
@@ -115,7 +130,8 @@ module ex_stage(
                          (branch_rs1 + id_ex_imm) :  // JALR
                          (id_ex_pc + id_ex_imm);  // JAL
     
-    wire [31:0] ex_pc_plus4 = id_ex_pc;
+    // PC+4 用于JAL/JALR写回
+    wire [31:0] ex_pc_plus4 = id_ex_pc + 4;
     
     // 写回数据选择（用于SW指令）
     wire [31:0] ex_rdata2;
@@ -133,7 +149,7 @@ module ex_stage(
         .mem_write_in(id_ex_mem_write),
         .mem_to_reg_in(id_ex_mem_to_reg),
         .jump_in(id_ex_jump),
-        .alu_result_in(alu_result),
+        .alu_result_in(final_alu_result),
         .rdata2_in(ex_rdata2),
         .rd_in(id_ex_rd),
         .pc_plus4_in(ex_pc_plus4),

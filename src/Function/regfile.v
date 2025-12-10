@@ -15,12 +15,14 @@ module regfile(
     reg [31:0] registers [0:31];
     integer i;
 
-    // 初始化：x0寄存器始终为0
+    // 初始化：x0寄存器始终为0，x2（sp）初始化为栈顶地址
     always @(posedge clk or posedge rst) begin
         if (rst) begin
             for (i = 0; i < 32; i = i + 1) begin
                 registers[i] <= 32'b0;
             end
+            // 初始化栈指针（x2/sp）到有效地址（0x8000）
+            registers[2] <= 32'h00008000;
         end else begin
             if (we && rd != 5'b0) begin  // x0寄存器不可写
                 registers[rd] <= wdata;

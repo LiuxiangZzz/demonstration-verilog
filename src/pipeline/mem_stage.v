@@ -30,6 +30,13 @@ module mem_stage(
     wire [31:0] mem_rdata;
     wire mem_ready;
     
+    // 调试：显示mem_write信号（已禁用，让输出更清晰）
+    // always @(posedge clk) begin
+    //     if (ex_mem_mem_write) begin
+    //         $display("mem_stage: mem_write addr=%h wdata=%h mem_write=%b", ex_mem_alu_result, ex_mem_rdata2, ex_mem_mem_write);
+    //     end
+    // end
+    
     dmem dmem_inst(
         .clk(clk),
         .rst(rst),

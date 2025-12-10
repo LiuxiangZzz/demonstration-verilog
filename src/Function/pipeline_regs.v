@@ -169,6 +169,10 @@ module ex_mem_reg(
             branch_taken_out <= branch_taken_in;
             branch_target_out <= branch_target_in;
             jump_target_out <= jump_target_in;
+            // 调试输出已禁用，让Hello World输出更清晰
+            // if (mem_write_in && alu_result_in == 32'h10000000) begin
+            //     $display("ex_mem_reg: pass SW to 0x10000000 wdata=%h", rdata2_in);
+            // end
         end
     end
 

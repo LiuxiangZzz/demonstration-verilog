@@ -9,9 +9,9 @@ module decode_stage(
     input [4:0] mem_wb_rd,
     input [31:0] wb_data,
     input mem_wb_reg_write,
-    // 冒险检测输入
-    input id_ex_mem_read,
-    input [4:0] id_ex_rd,
+    // 冒险检测输入（来自ID/EX流水线寄存器）
+    input id_ex_mem_read_prev,
+    input [4:0] id_ex_rd_prev,
     input mem_stall,
     input ex_mem_branch_taken,
     input ex_mem_jump,
@@ -66,6 +66,7 @@ module decode_stage(
                  (opcode == 7'b1101111) ? imm_j :  // JAL
                  (opcode == 7'b1100111) ? imm_i :  // JALR
                  (opcode == 7'b0100011) ? imm_s :  // STORE
+                 (opcode == 7'b0110111) ? imm_u :  // LUI
                  imm_i;  // 默认I型立即数
     
     // 寄存器文件
@@ -106,16 +107,32 @@ module decode_stage(
     
     // 冒险检测单元
     // 检测Load-Use数据冒险
-    assign id_stall = (id_ex_mem_read && 
-                       ((rs1 == id_ex_rd) || (rs2 == id_ex_rd)) &&
-                       (id_ex_rd != 5'b0));
+    assign id_stall = (id_ex_mem_read_prev && 
+                       ((rs1 == id_ex_rd_prev) || (rs2 == id_ex_rd_prev)) &&
+                       (id_ex_rd_prev != 5'b0));
+    
+    // 调试：观察load-use冒险插入stall
+    always @(*) begin
+        if (id_stall) begin
+            $display("decode: load-use stall rs1=%0d rs2=%0d prev_rd=%0d", rs1, rs2, id_ex_rd_prev);
+        end
+    end
     
     assign id_flush = ex_mem_branch_taken || ex_mem_jump;
+
+    // 调试：观察load-use冒险检测
+    always @(posedge clk) begin
+        if (id_stall) begin
+            $display("decode_stage: stall due to load-use rs1=%0d rs2=%0d prev_rd=%0d prev_mem_read=%b",
+                     rs1, rs2, id_ex_rd_prev, id_ex_mem_read_prev);
+        end
+    end
     
     // ID/EX流水线寄存器
     id_ex_reg id_ex_reg_inst(
         .clk(clk),
         .rst(rst),
+        // 仅在内存stall时停住ID/EX，让load继续前推；hazard通过阻塞IF/ID实现气泡
         .stall(mem_stall),
         .flush(id_flush),
         .reg_write_in(reg_write),

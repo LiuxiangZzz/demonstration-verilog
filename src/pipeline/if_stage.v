@@ -40,7 +40,8 @@ module if_stage(
         .rst(rst),
         .stall(id_stall || mem_stall),
         .flush(if_flush),
-        .pc_in(pc_plus4),
+        // 传递当前PC而非PC+4，供后续PC相对跳转/分支使用
+        .pc_in(pc_reg),
         .instruction_in(instruction),
         .pc_out(if_id_pc),
         .instruction_out(if_id_instruction)
