@@ -35,7 +35,7 @@ module dmem(
                 end
             end
         end
-
+        
         // 将加载的数据整体拷贝到数据存储器，确保.rodata等常量可访问
         for (j = 0; j < 16384; j = j + 1) begin
             mem[j] = temp_mem[j];
