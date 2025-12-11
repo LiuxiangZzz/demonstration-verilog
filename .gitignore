@@ -3,18 +3,17 @@ test/build/
 *.o
 *.a
 
-# 仿真生成的文件
-test/sim
-*.vcd
+# 仿真生成的文件（波形文件）
+*.vcd          # 所有 .vcd 波形文件（VCD格式）
 *.fst
 *.lxt
 *.vpd
 src/demodump.vcd
 
 # 编译生成的文件
+# 注意：src/pipeline/hello.hex 需要提交（Vivado 仿真需要）
 test/hello.hex
 src/hello.hex
-src/pipeline/hello.hex
 *.elf
 *.bin
 *.dump
@@ -75,5 +74,5 @@ Desktop.ini
 *.orig
 
 # Markdown 文档文件
-*.md
+*.md           # 所有 .md 文档文件
 

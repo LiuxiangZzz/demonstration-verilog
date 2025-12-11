@@ -119,7 +119,7 @@ fastsim: prepare-sim
 sim: prepare-sim
 	@echo "=== 完整仿真（生成波形文件）==="
 	@cd $(TEST_DIR) && \
-	$(SIMULATOR) -o sim testbench.v ../$(SRC_DIR)/pipeline/*.v ../$(SRC_DIR)/Function/*.v && \
+	$(SIMULATOR) -DUSE_VCD -o sim testbench.v ../$(SRC_DIR)/pipeline/*.v ../$(SRC_DIR)/Function/*.v && \
 	$(VVP) sim
 	@echo ""
 	@if [ -f $(VCD_FILE_SRC) ]; then \

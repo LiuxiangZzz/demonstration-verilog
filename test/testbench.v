@@ -34,20 +34,18 @@ module testbench;
         $finish;
     end
     
-    // 波形文件输出到src目录
-    // 可以通过定义NO_WAVEFORM宏来禁用波形文件生成（用于fastsim）
-    `ifndef NO_WAVEFORM
+    // 波形文件输出
+    // 在 Vivado 中：使用 Vivado 自带的 .wdb 波形格式（自动生成，无需 $dumpfile）
+    // 在 iverilog 中：使用 VCD 格式（通过定义 USE_VCD 宏启用）
+    `ifdef USE_VCD
     initial begin
-        // 输出到src目录
+        // 仅在使用 iverilog 时生成 VCD 文件
         $dumpfile("../src/demodump.vcd");
         $display("Waveform file: ../src/demodump.vcd");
         $dumpvars(0, testbench);
     end
-    `else
-    initial begin
-        $display("Waveform generation disabled (NO_WAVEFORM defined)");
-    end
     `endif
+    // 注意：Vivado 会自动生成 .wdb 波形文件，无需手动配置
     
     // 监控信号
     integer cycle_count;

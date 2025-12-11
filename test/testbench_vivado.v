@@ -25,10 +25,10 @@ module testbench;
         rst = 1;
         #100;
         rst = 0;
-        $display("=== CPU仿真开始 ===");
-        $display("程序输出:");
+        $display("=== CPU Simulation Started ===");
+        $display("Program Output:");
         $display("----------------------------------------");
-        #5000;  // 运行5000ns
+        #5000;  // 运行5000ns（足够运行hello.c程序）
         $display("----------------------------------------");
         $display("Simulation finished at time %0t", $time);
         $finish;

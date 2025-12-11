@@ -23,8 +23,8 @@ module dmem(
             temp_mem[j] = 32'b0;
         end
         
-        // 尝试从hex文件加载整块数据（地址从0开始）
-        // 注意：从test目录运行，所以路径是相对于test目录的
+        // Try to load hex file (address starts from 0)
+        // Note: Working directory is set to src/pipeline in Vivado
         $readmemh("hello.hex", temp_mem);
         if (temp_mem[0] == 32'h00000013 || temp_mem[0] == 32'h00000000) begin
             $readmemh("../test/hello.hex", temp_mem);

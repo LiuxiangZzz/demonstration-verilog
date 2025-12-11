@@ -16,17 +16,19 @@ module imem(
             mem[i] = 32'h00000013;  // NOP
         end
         
-        // 尝试从多个路径加载
+        // Try to load from multiple paths
         file_loaded = 0;
-        $readmemh("../pipeline/hello.hex", mem);
+        // First try current working directory (set to src/pipeline in Vivado)
+        $readmemh("hello.hex", mem);
         if (mem[0] != 32'h00000013) begin
             file_loaded = 1;
-            $display("Successfully loaded instructions from ../pipeline/hello.hex");
+            $display("Successfully loaded instructions from hello.hex");
         end else begin
-            $readmemh("hello.hex", mem);
+            // Try relative paths
+            $readmemh("../pipeline/hello.hex", mem);
             if (mem[0] != 32'h00000013) begin
                 file_loaded = 1;
-                $display("Successfully loaded instructions from hello.hex");
+                $display("Successfully loaded instructions from ../pipeline/hello.hex");
             end else begin
                 $readmemh("../test/hello.hex", mem);
                 if (mem[0] != 32'h00000013) begin
