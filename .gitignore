@@ -74,3 +74,6 @@ Desktop.ini
 *.temp
 *.orig
 
+# Markdown 文档文件
+*.md
+

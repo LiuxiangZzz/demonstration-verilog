@@ -14,7 +14,7 @@ SRC_DIR = src
 # WSL路径
 WAVEFORM_DIR_WSL = /mnt/c/Users/Lenovo/Desktop/waveform_check
 # VMware共享文件夹路径（如果Desktop已挂载）
-# 注意：共享文件夹直接映射Desktop，所以路径是 /mnt/hgfs/Desktop/waveform_check
+# 注意：共享文件夹直接映射到 /mnt/hgfs/Desktop，所以 waveform_check 在 /mnt/hgfs/Desktop/waveform_check
 WAVEFORM_DIR_VMWARE = /mnt/hgfs/Desktop/waveform_check
 # 检测可用的路径
 WAVEFORM_DIR = $(shell if [ -d $(WAVEFORM_DIR_WSL) ]; then echo $(WAVEFORM_DIR_WSL); elif [ -d $(WAVEFORM_DIR_VMWARE) ]; then echo $(WAVEFORM_DIR_VMWARE); else echo ""; fi)

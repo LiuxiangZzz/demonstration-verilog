@@ -102,7 +102,6 @@ module top(
         .mem_wb_rd(wb_rd),
         .wb_data(wb_data),
         .mem_wb_reg_write(wb_reg_write),
-        // 冒险检测：查看当前EX阶段(ID/EX寄存器)的load
         .id_ex_mem_read_prev(id_ex_mem_read),
         .id_ex_rd_prev(id_ex_rd),
         .mem_stall(mem_stall),
