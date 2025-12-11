@@ -9,22 +9,28 @@ test/sim
 *.fst
 *.lxt
 *.vpd
+src/demodump.vcd
 
 # 编译生成的文件
 test/hello.hex
 src/hello.hex
+src/pipeline/hello.hex
 *.elf
 *.bin
 *.dump
+*.s
+*.obj
 
 # 临时文件
 *.swp
 *.swo
 *~
 .DS_Store
+Thumbs.db
 
 # 日志文件
 *.log
+.cursor/debug.log
 
 # 编辑器备份文件
 *.bak
@@ -33,4 +39,38 @@ src/hello.hex
 # Verilog仿真器生成的文件
 *.vvp
 *.lxt2
+
+# IDE 和编辑器配置
+.cursor/
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Vivado 项目文件
+*.xpr
+*.jou
+*.log
+*.str
+.runs/
+.cache/
+.hw/
+.sim/
+.ip_user_files/
+*.zip
+*.tar.gz
+
+# 系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# 其他临时文件
+*.tmp
+*.temp
+*.orig
 
