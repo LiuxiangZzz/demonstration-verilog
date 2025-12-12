@@ -125,27 +125,33 @@ sim: prepare-sim
 	@if [ -f $(VCD_FILE_SRC) ]; then \
 		echo "=== 波形文件已生成到: $(VCD_FILE_SRC) ==="; \
 		WAVEFORM_TARGET=""; \
-		if [ -d $(WAVEFORM_DIR_WSL) ]; then \
-			WAVEFORM_TARGET="$(WAVEFORM_DIR_WSL)/demodump.vcd"; \
-		elif [ -d $(WAVEFORM_DIR_VMWARE) ]; then \
-			WAVEFORM_TARGET="$(WAVEFORM_DIR_VMWARE)/demodump.vcd"; \
+		SYNC_SUCCESS=0; \
+		if [ -d /mnt/c/Users/Lenovo/Desktop ]; then \
+			if [ -d /mnt/c/Users/Lenovo/Desktop/waveform_check ] || mkdir -p /mnt/c/Users/Lenovo/Desktop/waveform_check 2>/dev/null; then \
+				WAVEFORM_TARGET="/mnt/c/Users/Lenovo/Desktop/waveform_check/demodump.vcd"; \
+			fi; \
+		elif [ -d /mnt/hgfs/Desktop ]; then \
+			if [ -d /mnt/hgfs/Desktop/waveform_check ]; then \
+				WAVEFORM_TARGET="/mnt/hgfs/Desktop/waveform_check/demodump.vcd"; \
+			fi; \
 		fi; \
-		if [ -n "$$WAVEFORM_TARGET" ]; then \
-			cp $(VCD_FILE_SRC) $$WAVEFORM_TARGET && \
-			echo "=== 已自动同步到Windows文件夹 ==="; \
-			echo "路径: $$WAVEFORM_TARGET"; \
-		else \
-			echo "警告: Windows共享文件夹不存在，无法自动同步"; \
+		if [ -n "$$WAVEFORM_TARGET" ] && [ -d "$$(dirname $$WAVEFORM_TARGET)" ]; then \
+			if cp $(VCD_FILE_SRC) $$WAVEFORM_TARGET 2>/dev/null; then \
+				echo "=== 已自动同步到Windows文件夹 ==="; \
+				echo "路径: $$WAVEFORM_TARGET"; \
+				echo "Windows路径: C:\\Users\\Lenovo\\Desktop\\waveform_check\\demodump.vcd"; \
+				SYNC_SUCCESS=1; \
+			fi; \
+		fi; \
+		if [ $$SYNC_SUCCESS -eq 0 ]; then \
+			echo "警告: 无法自动同步到Windows文件夹"; \
 			echo ""; \
 			echo "波形文件位置: $(VCD_FILE_SRC)"; \
 			echo "目标Windows路径: C:\\Users\\Lenovo\\Desktop\\waveform_check\\demodump.vcd"; \
 			echo ""; \
-			echo "请使用以下方式之一复制文件:"; \
-			echo "  1. 如果使用VMware，请先挂载共享文件夹:"; \
-			echo "     sudo mkdir -p /mnt/hgfs/Desktop"; \
-			echo "     sudo vmhgfs-fuse .host:/Desktop /mnt/hgfs/Desktop -o subtype=vmhgfs-fuse,allow_other"; \
-			echo "  2. 使用SCP/SFTP工具从虚拟机复制到Windows"; \
-			echo "  3. 使用文件管理器手动复制（如果已配置共享）"; \
+			echo "解决方法:"; \
+			echo "  1. 在Windows中手动创建文件夹: C:\\Users\\Lenovo\\Desktop\\waveform_check"; \
+			echo "  2. 或运行: ./setup_shared_folder.sh (会自动创建文件夹)"; \
 			echo ""; \
 			echo "文件大小: $$(du -h $(VCD_FILE_SRC) | cut -f1)"; \
 		fi \

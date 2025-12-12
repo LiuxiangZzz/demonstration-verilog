@@ -185,6 +185,23 @@ if {[llength $found_files] > 0} {
     }
 }
 
+# Add hello.hex file as a source file (needed for $readmemh during synthesis)
+set hex_file [file join $script_dir "src/pipeline/hello.hex"]
+if {[file exists $hex_file]} {
+    # Add as a source file so Vivado can find it during synthesis
+    if {[catch {add_files $hex_file} result]} {
+        puts "WARNING: Could not add hello.hex file: $result"
+        puts "  File exists but may already be in project"
+    } else {
+        puts "OK: Added hello.hex file: $hex_file"
+        # Set file type to "Memory Initialization Files" if possible
+        catch {set_property FILE_TYPE "Memory Initialization Files" [get_files $hex_file]}
+    }
+} else {
+    puts "WARNING: hello.hex file not found at: $hex_file"
+    puts "  Please ensure hello.hex exists for $readmemh to work during synthesis"
+}
+
 # Add simulation files (using script directory as base path)
 set testbench_file [file join $script_dir "test/testbench_vivado.v"]
 if {[file exists $testbench_file]} {
@@ -211,6 +228,33 @@ if {[catch {set_property top testbench [get_filesets sim_1]} result]} {
 if {[catch {set_property top top [get_filesets sources_1]} result]} {
     puts "WARNING: Failed to set synthesis top: $result"
 }
+
+# Set synthesis parameters to fix memory inference issues
+# 设置综合参数以解决大内存推断问题
+puts "Setting synthesis parameters for large memory inference..."
+# 设置全局参数（在项目创建时设置，会在后续综合时生效）
+set_param synth.elaboration.rodinMoreOptions {rt::set_parameter dissolveMemorySizeLimit 524288}
+puts "OK: Global synthesis parameter set for large memory (524288 bits)"
+
+# 尝试设置综合运行的属性（如果运行已存在）
+if {[get_runs -quiet synth_1] != ""} {
+    # Set memory style preference for synthesis
+    # 设置内存风格偏好为 Block RAM
+    if {[catch {set_property STEPS.SYNTH_DESIGN.ARGS.RESOURCE_SHARING off [get_runs synth_1]} result]} {
+        puts "NOTE: Could not set RESOURCE_SHARING property: $result"
+    } else {
+        puts "OK: Resource sharing disabled for better memory inference"
+    }
+} else {
+    puts "NOTE: synth_1 run not yet created, will set properties when run is created"
+}
+
+# Note: For $readmemh during synthesis, Vivado looks for files relative to:
+# 1. The project directory (most common)
+# 2. The directory where the source file is located
+# 3. Files added to the project (which we've already done above)
+# So we use "src/pipeline/hello.hex" path in the Verilog code, which is relative to project root
+puts "NOTE: hello.hex file path in code should be relative to project root (src/pipeline/hello.hex)"
 
 # Update compile order
 if {[catch {update_compile_order -fileset sources_1} result]} {

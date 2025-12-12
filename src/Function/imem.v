@@ -5,7 +5,8 @@ module imem(
 );
 
     // 指令存储器：64KB (16K words)
-    reg [31:0] mem [0:16383];
+    // 使用 Block RAM 综合属性，避免内存推断错误
+    (* ram_style = "block" *) reg [31:0] mem [0:16383];
     
     // 从文件加载指令
     integer i;
@@ -16,31 +17,39 @@ module imem(
             mem[i] = 32'h00000013;  // NOP
         end
         
-        // Try to load from multiple paths
+        // Try to load from multiple paths (Vivado synthesis uses project directory as working directory)
         file_loaded = 0;
-        // First try current working directory (set to src/pipeline in Vivado)
-        $readmemh("hello.hex", mem);
+        // Try absolute path first (most reliable, but requires file to be in project)
+        // Then try paths relative to project root
+        $readmemh("src/pipeline/hello.hex", mem);
         if (mem[0] != 32'h00000013) begin
             file_loaded = 1;
-            $display("Successfully loaded instructions from hello.hex");
+            $display("Successfully loaded instructions from src/pipeline/hello.hex");
         end else begin
-            // Try relative paths
-            $readmemh("../pipeline/hello.hex", mem);
+            // Try current working directory (for simulation)
+            $readmemh("hello.hex", mem);
             if (mem[0] != 32'h00000013) begin
                 file_loaded = 1;
-                $display("Successfully loaded instructions from ../pipeline/hello.hex");
+                $display("Successfully loaded instructions from hello.hex");
             end else begin
-                $readmemh("../test/hello.hex", mem);
+                // Try other relative paths
+                $readmemh("../pipeline/hello.hex", mem);
                 if (mem[0] != 32'h00000013) begin
                     file_loaded = 1;
-                    $display("Successfully loaded instructions from ../test/hello.hex");
+                    $display("Successfully loaded instructions from ../pipeline/hello.hex");
                 end else begin
                     $readmemh("test/hello.hex", mem);
                     if (mem[0] != 32'h00000013) begin
                         file_loaded = 1;
                         $display("Successfully loaded instructions from test/hello.hex");
                     end else begin
-                        $display("Warning: Could not load hello.hex, using NOPs");
+                        $readmemh("../test/hello.hex", mem);
+                        if (mem[0] != 32'h00000013) begin
+                            file_loaded = 1;
+                            $display("Successfully loaded instructions from ../test/hello.hex");
+                        end else begin
+                            $display("Warning: Could not load hello.hex, using NOPs");
+                        end
                     end
                 end
             end

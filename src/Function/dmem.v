@@ -11,7 +11,8 @@ module dmem(
 );
 
     // 数据存储器：64KB (16K words)
-    reg [31:0] mem [0:16383];
+    // 使用 Block RAM 综合属性，避免内存推断错误
+    (* ram_style = "block" *) reg [31:0] mem [0:16383];
     
     // 初始化：从hello.hex加载整块镜像（代码+常量）
     integer j;
@@ -24,14 +25,19 @@ module dmem(
         end
         
         // Try to load hex file (address starts from 0)
-        // Note: Working directory is set to src/pipeline in Vivado
-        $readmemh("hello.hex", temp_mem);
+        // Try paths relative to project root first (most reliable for synthesis)
+        // Note: File must be added to project for synthesis to find it
+        $readmemh("src/pipeline/hello.hex", temp_mem);
         if (temp_mem[0] == 32'h00000013 || temp_mem[0] == 32'h00000000) begin
-            $readmemh("../test/hello.hex", temp_mem);
+            // Try current working directory (for simulation)
+            $readmemh("hello.hex", temp_mem);
             if (temp_mem[0] == 32'h00000013 || temp_mem[0] == 32'h00000000) begin
-                $readmemh("../test/build/hello.hex", temp_mem);
+                $readmemh("test/hello.hex", temp_mem);
                 if (temp_mem[0] == 32'h00000013 || temp_mem[0] == 32'h00000000) begin
-                    $readmemh("test/hello.hex", temp_mem);
+                    $readmemh("../test/hello.hex", temp_mem);
+                    if (temp_mem[0] == 32'h00000013 || temp_mem[0] == 32'h00000000) begin
+                        $readmemh("../test/build/hello.hex", temp_mem);
+                    end
                 end
             end
         end

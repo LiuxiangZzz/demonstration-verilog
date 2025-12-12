@@ -2,7 +2,12 @@
 module top(
     input clk,
     input rst,
-    output [31:0] pc_out
+    output [31:0] pc_out,
+    // 添加调试输出，防止综合工具优化掉其他阶段
+    output [31:0] debug_instruction,
+    output [31:0] debug_alu_result,
+    output [31:0] debug_mem_rdata,
+    output [31:0] debug_wb_data
 );
 
     // ========== 阶段间信号 ==========
@@ -211,5 +216,11 @@ module top(
     
     // PC输出
     assign pc_out = pc;
+    
+    // 调试输出，确保所有阶段都被使用（防止被优化掉）
+    assign debug_instruction = if_id_instruction;  // ID阶段
+    assign debug_alu_result = ex_mem_alu_result;   // EX阶段
+    assign debug_mem_rdata = mem_wb_mem_rdata;    // MEM阶段
+    assign debug_wb_data = wb_data;                // WB阶段
 
 endmodule

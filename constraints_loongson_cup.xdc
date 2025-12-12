@@ -12,9 +12,10 @@
 # ========== 时钟约束 ==========
 # 注意：需要根据龙芯杯官方板子的实际时钟配置修改
 # 假设使用 100MHz 时钟（需要确认实际频率）
+# 对于综合和时序分析，即使没有实际引脚，也需要定义时钟约束
 # set_property PACKAGE_PIN XXX [get_ports clk]
-# create_clock -period 10.000 -name clk [get_ports clk]
-# set_property IOSTANDARD LVCMOS33 [get_ports clk]
+create_clock -period 10.000 -name clk [get_ports clk]
+set_property IOSTANDARD LVCMOS33 [get_ports clk]
 
 # ========== 复位约束 ==========
 # 注意：需要根据龙芯杯官方板子的实际复位引脚修改

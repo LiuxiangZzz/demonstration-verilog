@@ -6,12 +6,21 @@ module testbench;
     reg clk;
     reg rst;
     wire [31:0] pc;
+    // 调试输出端口（防止综合优化，仿真中可以不使用）
+    wire [31:0] debug_instruction;
+    wire [31:0] debug_alu_result;
+    wire [31:0] debug_mem_rdata;
+    wire [31:0] debug_wb_data;
     
     // CPU实例
     top cpu_inst(
         .clk(clk),
         .rst(rst),
-        .pc_out(pc)
+        .pc_out(pc),
+        .debug_instruction(debug_instruction),
+        .debug_alu_result(debug_alu_result),
+        .debug_mem_rdata(debug_mem_rdata),
+        .debug_wb_data(debug_wb_data)
     );
     
     // 时钟生成
