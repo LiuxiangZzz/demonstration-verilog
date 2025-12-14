@@ -116,49 +116,49 @@ fastsim: prepare-sim
 	@echo "=== 仿真完成 ==="
 
 # 完整仿真（生成波形文件）
-sim: prepare-sim
-	@echo "=== 完整仿真（生成波形文件）==="
-	@cd $(TEST_DIR) && \
-	$(SIMULATOR) -DUSE_VCD -o sim testbench.v ../$(SRC_DIR)/pipeline/*.v ../$(SRC_DIR)/Function/*.v && \
-	$(VVP) sim
-	@echo ""
-	@if [ -f $(VCD_FILE_SRC) ]; then \
-		echo "=== 波形文件已生成到: $(VCD_FILE_SRC) ==="; \
-		WAVEFORM_TARGET=""; \
-		SYNC_SUCCESS=0; \
-		if [ -d /mnt/c/Users/Lenovo/Desktop ]; then \
-			if [ -d /mnt/c/Users/Lenovo/Desktop/waveform_check ] || mkdir -p /mnt/c/Users/Lenovo/Desktop/waveform_check 2>/dev/null; then \
-				WAVEFORM_TARGET="/mnt/c/Users/Lenovo/Desktop/waveform_check/demodump.vcd"; \
-			fi; \
-		elif [ -d /mnt/hgfs/Desktop ]; then \
-			if [ -d /mnt/hgfs/Desktop/waveform_check ]; then \
-				WAVEFORM_TARGET="/mnt/hgfs/Desktop/waveform_check/demodump.vcd"; \
-			fi; \
-		fi; \
-		if [ -n "$$WAVEFORM_TARGET" ] && [ -d "$$(dirname $$WAVEFORM_TARGET)" ]; then \
-			if cp $(VCD_FILE_SRC) $$WAVEFORM_TARGET 2>/dev/null; then \
-				echo "=== 已自动同步到Windows文件夹 ==="; \
-				echo "路径: $$WAVEFORM_TARGET"; \
-				echo "Windows路径: C:\\Users\\Lenovo\\Desktop\\waveform_check\\demodump.vcd"; \
-				SYNC_SUCCESS=1; \
-			fi; \
-		fi; \
-		if [ $$SYNC_SUCCESS -eq 0 ]; then \
-			echo "警告: 无法自动同步到Windows文件夹"; \
-			echo ""; \
-			echo "波形文件位置: $(VCD_FILE_SRC)"; \
-			echo "目标Windows路径: C:\\Users\\Lenovo\\Desktop\\waveform_check\\demodump.vcd"; \
-			echo ""; \
-			echo "解决方法:"; \
-			echo "  1. 在Windows中手动创建文件夹: C:\\Users\\Lenovo\\Desktop\\waveform_check"; \
-			echo "  2. 或运行: ./setup_shared_folder.sh (会自动创建文件夹)"; \
-			echo ""; \
-			echo "文件大小: $$(du -h $(VCD_FILE_SRC) | cut -f1)"; \
-		fi \
-	else \
-		echo "警告: 未找到波形文件 $(VCD_FILE_SRC)"; \
-	fi
-
+#sim: prepare-sim
+    @echo "=== 完整仿真（生成波形文件）==="
+    @cd $(TEST_DIR) && \
+    $(SIMULATOR) -DUSE_VCD -o sim testbench.v ../$(SRC_DIR)/pipeline/*.v ../$(SRC_DIR)/Function/*.v && \
+    $(VVP) sim
+    @echo ""
+    @if [ -f $(VCD_FILE_SRC) ]; then \
+        echo "=== 波形文件已生成到: $(VCD_FILE_SRC) ==="; \
+        WAVEFORM_TARGET=""; \
+        SYNC_SUCCESS=0; \
+        if [ -d /mnt/c/Users/Lenovo/Desktop ]; then \
+            if [ -d /mnt/c/Users/Lenovo/Desktop/waveform_check ] || mkdir -p /mnt/c/Users/Lenovo/Desktop/waveform_check 2>/dev/null; then \
+                WAVEFORM_TARGET="/mnt/c/Users/Lenovo/Desktop/waveform_check/demodump.vcd"; \
+            fi; \
+        elif [ -d /mnt/hgfs/Desktop ]; then \
+            if [ -d /mnt/hgfs/Desktop/waveform_check ]; then \
+                WAVEFORM_TARGET="/mnt/hgfs/Desktop/waveform_check/demodump.vcd"; \
+            fi; \
+        fi; \
+        if [ -n "$$WAVEFORM_TARGET" ] && [ -d "$$(dirname $$WAVEFORM_TARGET)" ]; then \
+            if cp $(VCD_FILE_SRC) $$WAVEFORM_TARGET 2>/dev/null; then \
+                echo "=== 已自动同步到Windows文件夹 ==="; \
+                echo "路径: $$WAVEFORM_TARGET"; \
+                echo "Windows路径: C:\\Users\\Lenovo\\Desktop\\waveform_check\\demodump.vcd"; \
+                SYNC_SUCCESS=1; \
+            fi; \
+        fi; \
+        if [ $$SYNC_SUCCESS -eq 0 ]; then \
+            echo "警告: 无法自动同步到Windows文件夹"; \
+            echo ""; \
+            echo "波形文件位置: $(VCD_FILE_SRC)"; \
+            echo "目标Windows路径: C:\\Users\\Lenovo\\Desktop\\waveform_check\\demodump.vcd"; \
+            echo ""; \
+            echo "解决方法:"; \
+            echo "  1. 在Windows中手动创建文件夹: C:\\Users\\Lenovo\\Desktop\\waveform_check"; \
+            echo "  2. 或运行: ./setup_shared_folder.sh (会自动创建文件夹)"; \
+            echo ""; \
+            echo "文件大小: $$(du -h $(VCD_FILE_SRC) | cut -f1)"; \
+        fi \
+    else \
+        echo "警告: 未找到波形文件 $(VCD_FILE_SRC)"; \
+    fi
+	
 # 清理构建文件
 clean:
 	@echo "=== 清理构建文件 ==="
